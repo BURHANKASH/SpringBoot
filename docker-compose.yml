@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  quiz-generation-service:
+    image: quizgenerationimage:1.0
+    build:
+      context: ./quiz-generation-service/quiz-generation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - mynetwork
+    depends_on:
+      - mysql
+      - question-bank-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/quiz_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 287426
+      QUESTION_BANK_SERVICE_URL: http://question-bank-service:8080/api/questions
+
+  question-bank-service:
+    image: questionbankimage:1.0
+    build:
+      context: ./question-bank-service/question-bank-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - mynetwork
+    depends_on:
+      - mongodb
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/question-bank
+
+  mongodb:
+    image: mongo:4.4
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - mynetwork
+    volumes:
+      - mongodb-data:/data/db
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - mynetwork
+    environment:
+      MYSQL_ROOT_PASSWORD: 287426
+      MYSQL_DATABASE: quiz_db
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:
+  mongodb-data:
+
+networks:
+  mynetwork:
+    driver: bridge
